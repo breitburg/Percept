@@ -22,6 +22,21 @@ Settings → Percept:
 Any OpenAI-compatible endpoint works. Errors from the API are spoken back verbatim, so a
 wrong key, URL or model name is diagnosable from the device.
 
+## Conversation history
+
+Follow-ups work: every exchange is kept and replayed with each request, so "how old is Elon
+Musk?" then "where was he born?" resolves as you would expect.
+
+The history is **uncapped** — it grows for as long as SpringBoard runs and is only cleared by
+a respring. Two consequences worth knowing:
+
+- Each request carries every prior turn, so payload, token cost and latency grow with use.
+- Eventually the model's context limit is reached, after which the endpoint returns an error,
+  which Percept speaks back verbatim. Respring to start fresh.
+
+It lives in memory only; nothing is written to disk. Failed requests are not recorded, so a
+network error never enters the history as though the assistant had said it.
+
 ## What it does, and does not, do
 
 Apple still performs **speech recognition**. iOS 9 has no on-device recogniser — the

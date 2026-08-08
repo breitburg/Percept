@@ -30,6 +30,11 @@ static NSString * const kDefaultSystemPrompt = @"You are Siri. Respond with 1-2 
 
 static NSString *gLastInjectedReply = nil;
 
+// Every exchange so far, as {role, content} pairs, deliberately untrimmed. It lives only in
+// SpringBoard's memory, so a respring clears it; nothing is written to disk. Guarded because
+// it is read on a background queue while Siri may already be starting the next request.
+static NSMutableArray *gConversation = nil;
+
 static void PerceptLog(NSString *format, ...) {
     @autoreleasepool {
         va_list arguments;
@@ -84,13 +89,18 @@ static NSString *PerceptFetchReply(NSString *prompt) {
     NSURL *url = [NSURL URLWithString:[baseURL stringByAppendingString:@"chat/completions"]];
     if (!url) return @"The base URL in Percept settings isn't a valid address.";
 
+    NSDictionary *userMessage = [NSDictionary dictionaryWithObjectsAndKeys:
+                                 @"user", @"role", prompt, @"content", nil];
+
     NSMutableArray *messages = [NSMutableArray array];
     if ([systemPrompt length] > 0) {
         [messages addObject:[NSDictionary dictionaryWithObjectsAndKeys:
                              @"system", @"role", systemPrompt, @"content", nil]];
     }
-    [messages addObject:[NSDictionary dictionaryWithObjectsAndKeys:
-                         @"user", @"role", prompt, @"content", nil]];
+    @synchronized (gConversation) {
+        [messages addObjectsFromArray:gConversation];
+    }
+    [messages addObject:userMessage];
 
     NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:url];
     [request setHTTPMethod:@"POST"];
@@ -135,8 +145,18 @@ static NSString *PerceptFetchReply(NSString *prompt) {
     NSString *content = [[[[json objectForKey:@"choices"] firstObject]
                           objectForKey:@"message"] objectForKey:@"content"];
     if ([content length] > 0) {
-        return [content stringByTrimmingCharactersInSet:
-                [NSCharacterSet whitespaceAndNewlineCharacterSet]];
+        NSString *reply = [content stringByTrimmingCharactersInSet:
+                           [NSCharacterSet whitespaceAndNewlineCharacterSet]];
+
+        // Recorded only on success, so a network or API failure never enters the history as
+        // though the assistant had said it.
+        @synchronized (gConversation) {
+            [gConversation addObject:userMessage];
+            [gConversation addObject:[NSDictionary dictionaryWithObjectsAndKeys:
+                                      @"assistant", @"role", reply, @"content", nil]];
+        }
+
+        return reply;
     }
 
     NSString *apiMessage = [[json objectForKey:@"error"] objectForKey:@"message"];
@@ -251,6 +271,8 @@ static void PerceptInit(void) {
         if (![[[NSBundle mainBundle] bundleIdentifier] isEqualToString:@"com.apple.springboard"]) {
             return;
         }
+
+        gConversation = [[NSMutableArray alloc] init];
 
         // AssistantUI and friends load lazily; force them so the classes resolve now.
         dlopen("/System/Library/PrivateFrameworks/AssistantUI.framework/AssistantUI", RTLD_LAZY);
