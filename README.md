@@ -22,6 +22,20 @@ Settings → Percept:
 Any OpenAI-compatible endpoint works. Errors from the API are spoken back verbatim, so a
 wrong key, URL or model name is diagnosable from the device.
 
+## Rich formatting
+
+Replies render as HTML by default, so the markdown models emit — bold, italics, code,
+bullet lists — displays as formatting rather than literal asterisks. Toggle it off under
+**Rich Formatting** in settings to fall back to a plain utterance.
+
+`SAUIHtmlView` ships no headers and is dictionary-backed, so the selector carrying its markup
+cannot be known ahead of time; it is resolved at runtime from a list of candidates and logged
+to `/var/tmp/percept.log`. If none binds, Percept falls back to a plain utterance rather than
+rendering nothing.
+
+Speech is unaffected either way: TTS is driven by `speakableText`, inherited from `SAAceView`
+by every view type, and is always set to the plain text.
+
 ## Conversation history
 
 Follow-ups work: every exchange is kept and replayed with each request, so "how old is Elon
