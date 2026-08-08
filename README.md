@@ -71,9 +71,11 @@ frameworks:
   `SARequestCompleted` and pushed through `-[AFUISiriSession performAceCommand:]`. TTS is
   driven by `speakableText` (inherited from `SAAceView`), *not* `text`; setting only `text`
   renders a silent bubble.
-- **Suppression** — Apple's own answer arrives at
-  `-[AFConnectionClientServiceDelegate requestDidReceiveCommand:reply:]` as an `SAUIAddViews`
-  and is dropped there.
+- **Suppression** — every client-bound command from assistantd arrives at
+  `-[AFConnectionClientServiceDelegate requestDidReceiveCommand:reply:]` and is dropped there
+  between recognition and our own reply. **All** of them, not just the ones that draw
+  something: Apple executes actions through the same channel, so filtering only `SAUIAddViews`
+  hid the confirmation while still letting Siri set the timer.
 
 Three things that look reasonable but do not work:
 
@@ -84,6 +86,8 @@ Three things that look reasonable but do not work:
 3. **Dropping inbound `SAUIAddViews` by class.** Our own injected reply is echoed back
    through the *same* inbound path, so this suppresses it too. The two are told apart by
    matching the text just injected.
+4. **Suppressing only what is displayed.** Hiding Apple's answer does not stop Apple acting on
+   the request — the timer is still set, the message still sent.
 
 `AssistantExtensions` (`me.k3a.ae`), which 1.x depended on, is dead on iOS 9: its dylib fails
 to load with `Symbol not found: _OBJC_CLASS_$_AFUISnippetController`, an iOS 5/6-era
