@@ -22,22 +22,6 @@ Settings → Percept:
 Any OpenAI-compatible endpoint works. Errors from the API are spoken back verbatim, so a
 wrong key, URL or model name is diagnosable from the device.
 
-## Rich formatting
-
-Replies render as HTML by default, so the markdown models emit — bold, italics, code,
-bullet lists — displays as formatting rather than literal asterisks. Toggle it off under
-**Rich Formatting** in settings to fall back to a plain utterance.
-
-`SAUIHtmlView` ships no headers and is dictionary-backed, so the selector carrying its markup
-cannot be known ahead of time; it is resolved at runtime from a list of candidates and logged
-to `/var/tmp/percept.log`. If none binds, Percept falls back to a plain utterance rather than
-rendering nothing.
-
-The markup carries no styling of its own — the Siri sheet supplies that.
-
-Speech is unaffected either way: TTS is driven by `speakableText`, inherited from `SAAceView`
-by every view type, and is always set to the plain text.
-
 ## Conversation history
 
 Follow-ups work: every exchange is kept and replayed with each request, so "how old is Elon
@@ -88,6 +72,10 @@ Three things that look reasonable but do not work:
    matching the text just injected.
 4. **Suppressing only what is displayed.** Hiding Apple's answer does not stop Apple acting on
    the request — the timer is still set, the message still sent.
+5. **Presenting the reply in a `SAUIHtmlView`.** Given inline markup it renders a "Content Not
+   Available" card; it evidently expects something other than an HTML fragment. Replies are
+   plain `SAUIAssistantUtteranceView`s, so markdown from the model shows as literal asterisks
+   — ask for plain text in the system prompt instead.
 
 `AssistantExtensions` (`me.k3a.ae`), which 1.x depended on, is dead on iOS 9: its dylib fails
 to load with `Symbol not found: _OBJC_CLASS_$_AFUISnippetController`, an iOS 5/6-era

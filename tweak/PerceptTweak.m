@@ -169,111 +169,7 @@ static NSString *PerceptFetchReply(NSString *prompt) {
     return [apiMessage length] > 0 ? apiMessage : @"I got an empty response.";
 }
 
-#pragma mark - Formatting
-
-static NSString *PerceptApplyInlineMarkup(NSString *line) {
-    // Bold first: **x** would otherwise be eaten by the italic pattern.
-    NSArray *patterns = [NSArray arrayWithObjects:
-                         @"\\*\\*(.+?)\\*\\*", @"<b>$1</b>",
-                         @"`(.+?)`", @"<code>$1</code>",
-                         @"\\*(.+?)\\*", @"<i>$1</i>", nil];
-
-    NSMutableString *result = [[line mutableCopy] autorelease];
-    for (NSUInteger index = 0; index + 1 < [patterns count]; index += 2) {
-        NSRegularExpression *expression =
-            [NSRegularExpression regularExpressionWithPattern:[patterns objectAtIndex:index]
-                                                      options:0 error:NULL];
-        [expression replaceMatchesInString:result options:0
-                                     range:NSMakeRange(0, [result length])
-                              withTemplate:[patterns objectAtIndex:index + 1]];
-    }
-    return result;
-}
-
-// Models answer in markdown, which would otherwise be read out as literal asterisks.
-static NSString *PerceptHTMLFromMarkdown(NSString *markdown) {
-    NSMutableString *escaped = [[markdown mutableCopy] autorelease];
-    NSArray *entities = [NSArray arrayWithObjects:@"&", @"&amp;", @"<", @"&lt;", @">", @"&gt;", nil];
-    for (NSUInteger index = 0; index + 1 < [entities count]; index += 2) {
-        [escaped replaceOccurrencesOfString:[entities objectAtIndex:index]
-                                 withString:[entities objectAtIndex:index + 1]
-                                    options:0 range:NSMakeRange(0, [escaped length])];
-    }
-
-    NSMutableString *body = [NSMutableString string];
-    BOOL inList = NO;
-
-    for (NSString *line in [escaped componentsSeparatedByString:@"\n"]) {
-        NSString *trimmed = [line stringByTrimmingCharactersInSet:
-                             [NSCharacterSet whitespaceCharacterSet]];
-        if ([trimmed length] == 0) {
-            continue;
-        }
-
-        BOOL isBullet = [trimmed hasPrefix:@"- "] || [trimmed hasPrefix:@"* "];
-        if (isBullet && !inList) {
-            [body appendString:@"<ul>"];
-            inList = YES;
-        } else if (!isBullet && inList) {
-            [body appendString:@"</ul>"];
-            inList = NO;
-        }
-
-        if (isBullet) {
-            [body appendFormat:@"<li>%@</li>",
-                PerceptApplyInlineMarkup([trimmed substringFromIndex:2])];
-        } else {
-            [body appendFormat:@"<p>%@</p>", PerceptApplyInlineMarkup(trimmed)];
-        }
-    }
-    if (inList) {
-        [body appendString:@"</ul>"];
-    }
-
-    // No styling: the Siri sheet supplies its own, so anything set here only fights it.
-    return body;
-}
-
 #pragma mark - Injection
-
-// SAUIHtmlView is dictionary-backed and ships no headers, so the setter carrying its markup
-// cannot be known ahead of time. Try the plausible names and report which one bound; returns
-// nil if none did, so the caller can fall back to a plain utterance rather than render nothing.
-static id PerceptBuildHTMLView(NSString *reply) {
-    Class htmlClass = objc_getClass("SAUIHtmlView");
-    if (!htmlClass) return nil;
-
-    // Guarded: an unrecognised class method here would raise inside SpringBoard and take the
-    // whole UI down. +aceView is the inherited SAAceView factory, tried if +htmlView is absent.
-    SEL factory = 0;
-    if ([htmlClass respondsToSelector:@selector(htmlView)]) {
-        factory = @selector(htmlView);
-    } else if ([htmlClass respondsToSelector:@selector(aceView)]) {
-        factory = @selector(aceView);
-    } else {
-        PerceptLog(@"SAUIHtmlView has no known factory - falling back to utterance");
-        return nil;
-    }
-
-    id view = ((id (*)(id, SEL))objc_msgSend)(htmlClass, factory);
-    if (!view) return nil;
-
-    NSString *html = PerceptHTMLFromMarkdown(reply);
-    NSArray *setters = [NSArray arrayWithObjects:@"setHtml:", @"setHtmlString:",
-                        @"setHTML:", @"setContent:", @"setText:", nil];
-
-    for (NSString *name in setters) {
-        SEL setter = NSSelectorFromString(name);
-        if ([view respondsToSelector:setter]) {
-            [view performSelector:setter withObject:html];
-            PerceptLog(@"html view via %@", name);
-            return view;
-        }
-    }
-
-    PerceptLog(@"SAUIHtmlView exposes no known setter - falling back to utterance");
-    return nil;
-}
 
 static void PerceptSpeak(id session, NSString *reply) {
     Class utteranceClass = objc_getClass("SAUIAssistantUtteranceView");
@@ -281,20 +177,12 @@ static void PerceptSpeak(id session, NSString *reply) {
     Class completedClass = objc_getClass("SARequestCompleted");
     if (!utteranceClass || !addViewsClass || !completedClass) return;
 
-    NSDictionary *prefs = [NSDictionary dictionaryWithContentsOfFile:kPrefsPath];
-    id renderHTML = [prefs objectForKey:@"renderHTML"];
-    id view = (renderHTML == nil || [renderHTML boolValue]) ? PerceptBuildHTMLView(reply) : nil;
-
-    if (!view) {
-        view = ((id (*)(id, SEL))objc_msgSend)(utteranceClass, @selector(assistantUtteranceView));
-        [view performSelector:@selector(setText:) withObject:reply];
-        [view performSelector:@selector(setDialogIdentifier:) withObject:@"Misc#ident"];
-    }
-
-    id utterance = view;
-    // speakableText, inherited from SAAceView by every view type, is what drives TTS; setting
-    // only `text` renders silently, and an HTML view has no `text` at all.
+    id utterance = ((id (*)(id, SEL))objc_msgSend)(utteranceClass, @selector(assistantUtteranceView));
+    [utterance performSelector:@selector(setText:) withObject:reply];
+    // speakableText, inherited from SAAceView, is what drives TTS; setting only `text`
+    // renders the bubble silently.
     [utterance performSelector:@selector(setSpeakableText:) withObject:reply];
+    [utterance performSelector:@selector(setDialogIdentifier:) withObject:@"Misc#ident"];
     SetBool(utterance, @selector(setListenAfterSpeaking:), NO);
 
     id addViews = ((id (*)(id, SEL))objc_msgSend)(addViewsClass, @selector(addViews));
@@ -328,8 +216,8 @@ static void replaced_requestDidReceiveCommand(id self, SEL _cmd, id command, id 
         NSString *className = NSStringFromClass([command class]);
         id views = SafeCall(command, @selector(views));
 
-        // speakableText is checked too, and first: an HTML view has no `text`, so matching on
-        // that alone would mistake our own reply for Apple's and suppress it.
+        // Both fields are checked: whichever a view carries, a match means this command is
+        // the echo of our own reply rather than something of Apple's.
         BOOL isOurs = NO;
         if ([views isKindOfClass:[NSArray class]]) {
             for (id view in (NSArray *)views) {

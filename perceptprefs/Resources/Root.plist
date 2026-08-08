@@ -101,26 +101,6 @@
 		<dict>
 			<key>cell</key>
 			<string>PSGroupCell</string>
-			<key>label</key>
-			<string>Display</string>
-			<key>footerText</key>
-			<string>Renders replies as formatted HTML instead of plain text. Turn off if replies stop appearing.</string>
-		</dict>
-		<dict>
-			<key>cell</key>
-			<string>PSSwitchCell</string>
-			<key>label</key>
-			<string>Rich Formatting</string>
-			<key>default</key>
-			<true/>
-			<key>defaults</key>
-			<string>com.breitburg.Percept</string>
-			<key>key</key>
-			<string>renderHTML</string>
-		</dict>
-		<dict>
-			<key>cell</key>
-			<string>PSGroupCell</string>
 			<key>footerText</key>
 			<string>Percept replaces Siri's own answers. A respring is required after installing.</string>
 		</dict>
