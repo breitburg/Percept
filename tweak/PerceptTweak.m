@@ -29,6 +29,7 @@ static NSString * const kDefaultModel = @"gpt-5.6-luna";
 static NSString * const kDefaultSystemPrompt = @"You are Siri. Respond with 1-2 concise paragraphs.";
 
 static NSString *gLastInjectedReply = nil;
+static NSString *gProcessTag = @"SB";
 
 // Every exchange so far, as {role, content} pairs, deliberately untrimmed. It lives only in
 // SpringBoard's memory, so a respring clears it; nothing is written to disk. Guarded because
@@ -42,7 +43,7 @@ static void PerceptLog(NSString *format, ...) {
         NSString *message = [[[NSString alloc] initWithFormat:format arguments:arguments] autorelease];
         va_end(arguments);
 
-        NSString *line = [NSString stringWithFormat:@"[%@] %@\n", [NSDate date], message];
+        NSString *line = [NSString stringWithFormat:@"[%@] (%@) %@\n", [NSDate date], gProcessTag, message];
         NSFileHandle *handle = [NSFileHandle fileHandleForWritingAtPath:kLogPath];
         if (!handle) {
             [line writeToFile:kLogPath atomically:YES encoding:NSUTF8StringEncoding error:NULL];
@@ -278,10 +279,64 @@ static BOOL SwizzleMethod(Class cls, SEL selector, IMP replacement, void *origin
     return YES;
 }
 
+// Discovery only. Setting a timer is executed somewhere outside SpringBoard - no action
+// command ever reaches our hook there - so this records what assistantd actually exposes,
+// without hooking anything inside a system daemon until there is reason to.
+static void PerceptSurveyImage(const char *imagePath, NSString *label) {
+    unsigned int count = 0;
+    const char **names = objc_copyClassNamesForImage(imagePath, &count);
+    if (!names) {
+        PerceptLog(@"%@: image not loaded", label);
+        return;
+    }
+
+    NSArray *keywords = [NSArray arrayWithObjects:@"Timer", @"Command", @"Dispatch",
+                         @"Execute", @"Action", @"Handler", @"Domain", @"Clock", nil];
+    NSMutableArray *hits = [NSMutableArray array];
+
+    for (unsigned int index = 0; index < count; index++) {
+        NSString *name = [NSString stringWithUTF8String:names[index]];
+        for (NSString *keyword in keywords) {
+            if ([name rangeOfString:keyword].location != NSNotFound) {
+                [hits addObject:name];
+                break;
+            }
+        }
+    }
+
+    PerceptLog(@"%@: %u classes, %lu of interest", label, count, (unsigned long)[hits count]);
+    NSUInteger limit = MIN([hits count], (NSUInteger)70);
+    for (NSUInteger index = 0; index < limit; index++) {
+        PerceptLog(@"    %@", [hits objectAtIndex:index]);
+    }
+    if ([hits count] > limit) {
+        PerceptLog(@"    ... %lu more", (unsigned long)([hits count] - limit));
+    }
+    free(names);
+}
+
+static void PerceptInitAssistantd(void) {
+    PerceptLog(@"=== assistantd survey (pid %d) ===", getpid());
+    PerceptSurveyImage("/System/Library/PrivateFrameworks/AssistantServices.framework/assistantd",
+                       @"assistantd");
+    PerceptSurveyImage("/System/Library/PrivateFrameworks/AssistantServices.framework/AssistantServices",
+                       @"AssistantServices");
+    PerceptLog(@"=== survey complete ===");
+}
+
 __attribute__((constructor))
 static void PerceptInit(void) {
     @autoreleasepool {
-        if (![[[NSBundle mainBundle] bundleIdentifier] isEqualToString:@"com.apple.springboard"]) {
+        NSString *bundleIdentifier = [[NSBundle mainBundle] bundleIdentifier];
+        NSString *processName = [[NSProcessInfo processInfo] processName];
+
+        if ([processName isEqualToString:@"assistantd"]) {
+            gProcessTag = @"AD";
+            PerceptInitAssistantd();
+            return;
+        }
+
+        if (![bundleIdentifier isEqualToString:@"com.apple.springboard"]) {
             return;
         }
 
