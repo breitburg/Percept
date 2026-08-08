@@ -30,12 +30,6 @@ static NSString * const kDefaultSystemPrompt = @"You are Siri. Respond with 1-2 
 
 static NSString *gLastInjectedReply = nil;
 
-// Open from the moment a transcript arrives until our own reply is injected. While open every
-// client-bound command from assistantd is dropped, not merely the ones that draw something:
-// Apple also executes actions this way - setting a timer, sending a message - and filtering
-// only SAUIAddViews left those running behind a hidden confirmation.
-static BOOL gSuppressInbound = NO;
-
 // Every exchange so far, as {role, content} pairs, deliberately untrimmed. It lives only in
 // SpringBoard's memory, so a respring clears it; nothing is written to disk. Guarded because
 // it is read on a background queue while Siri may already be starting the next request.
@@ -198,9 +192,6 @@ static void PerceptSpeak(id session, NSString *reply) {
     [gLastInjectedReply autorelease];
     gLastInjectedReply = [reply copy];
 
-    // Closed before sending: our commands round-trip through the inbound hook, and anything
-    // Apple still had in flight is long past by now.
-    gSuppressInbound = NO;
 
     [session performSelector:@selector(performAceCommand:) withObject:addViews];
     [session performSelector:@selector(performAceCommand:) withObject:completed];
@@ -232,7 +223,10 @@ static void replaced_requestDidReceiveCommand(id self, SEL _cmd, id command, id 
             }
         }
 
-        suppress = gSuppressInbound && !isOurs;
+        // Unconditional rather than windowed. A window opened at recognition leaked Apple's
+        // answer whenever it arrived before the recognition callback, which it often does.
+        // Nothing but SAUIAddViews is ever seen on this path, so scoping by class is enough.
+        suppress = [className isEqualToString:@"SAUIAddViews"] && !isOurs;
         PerceptLog(@"inbound %@ -> %@", className,
                    suppress ? @"dropped" : (isOurs ? @"ours" : @"passed"));
     }
@@ -260,7 +254,6 @@ static void replaced_tellSpeechRecognized(id self, SEL _cmd, id recognized) {
         return;
     }
 
-    gSuppressInbound = YES;
 
     [session retain];
     [transcript retain];
