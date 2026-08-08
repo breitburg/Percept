@@ -1,19 +1,17 @@
-Package: uk.calvink19.percept
-Version: 1.0.0
+Package: com.breitburg.percept
+Version: 1.1.0
 Architecture: iphoneos-arm
-Maintainer: calvink19
+Maintainer: breitburg
 Depends: mobilesubstrate, me.k3a.ae, preferenceloader
-Filename: ./debs/uk.calvink19.percept_1.0.0_iphoneos-arm.deb
-Size: 8496
-MD5sum: fe937d31dad10f5a06ff1606adc3617e
-SHA1: c7f69535e8fe2a0cb7135537cbe1ac2a64baf030
-SHA256: 408c22b44a46206b2c4f4ae0541116eb0599eb91aa0ef49894b39c8edca103ba
+Conflicts: uk.calvink19.percept
+Replaces: uk.calvink19.percept
+Filename: ./debs/com.breitburg.percept_1.1.0_iphoneos-arm.deb
+Size: 19094
+MD5sum: 60dad3c1f673f2e4fbcaf46f8566d0f4
+SHA1: 75d74d0978c1840265a2be16de96888b589b17f1
+SHA256: ef1d66e657072a5ad0f1da847c271b27933c440d837d2670a3a0df4434a71ecc
 Section: Addons (AssistantExtensions)
 Description: Makes Siri just a little bit smarter.
-Author: calvink19
-Depiction: https://calvink19.co/services/ss
-Installed-Size: 252
+Author: breitburg
 Name: Percept
-
-
 

@@ -7,13 +7,13 @@
 	<key>CFBundleExecutable</key>
 	<string>Percept</string>
 	<key>CFBundleIdentifier</key>
-	<string>uk.calvink19.percept</string>
+	<string>com.breitburg.Percept</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundlePackageType</key>
 	<string>BNDL</string>
 	<key>CFBundleVersion</key>
-	<string>1.0</string>
+	<string>1.1</string>
 	<key>NSPrincipalClass</key>
 	<string>AIAssistantExtension</string>
 </dict>

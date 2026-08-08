@@ -4,11 +4,14 @@
 @implementation XXXRootListController
 
 - (NSArray *)specifiers {
-	if (!_specifiers) {
-		_specifiers = [self loadSpecifiersFromPlistName:@"Root" target:self];
+	NSArray *specifiers = [super specifiers];
+
+	if (!specifiers) {
+		specifiers = [self loadSpecifiersFromPlistName:@"Root" target:self];
+		[self setSpecifiers:specifiers];
 	}
 
-	return _specifiers;
+	return specifiers;
 }
 
 @end

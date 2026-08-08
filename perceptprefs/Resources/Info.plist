@@ -7,17 +7,17 @@
 	<key>CFBundleExecutable</key>
 	<string>perceptprefs</string>
 	<key>CFBundleIdentifier</key>
-	<string>uk.calvink19.percept</string>
+	<string>com.breitburg.Percept.prefs</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundlePackageType</key>
 	<string>BNDL</string>
 	<key>CFBundleShortVersionString</key>
-	<string>1.0.0</string>
+	<string>1.1.0</string>
 	<key>CFBundleSignature</key>
 	<string>????</string>
 	<key>CFBundleVersion</key>
-	<string>1.0</string>
+	<string>1.1</string>
 	<key>NSPrincipalClass</key>
 	<string>XXXRootListController</string>
 </dict>

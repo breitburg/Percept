@@ -8,7 +8,7 @@
 			<key>cell</key>
 			<string>PSGroupCell</string>
 			<key>label</key>
-			<string>OpenAI API Key</string>
+			<string>API Key</string>
 		</dict>
 		<dict>
 			<key>cell</key>
@@ -16,29 +16,69 @@
 			<key>default</key>
 			<string></string>
 			<key>defaults</key>
-			<string>uk.calvink19.percept</string>
+			<string>com.breitburg.Percept</string>
 			<key>key</key>
 			<string>apiKey</string>
 			<key>placeholder</key>
 			<string>sk-...</string>
+			<key>autoCapsType</key>
+			<integer>0</integer>
+			<key>autoCorrectionType</key>
+			<integer>1</integer>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSGroupCell</string>
+			<key>label</key>
+			<string>Base URL</string>
+			<key>footerText</key>
+			<string>Any OpenAI-compatible endpoint. Must end in a slash; chat/completions is appended to it.</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSEditTextCell</string>
+			<key>default</key>
+			<string>https://api.openai.com/v1/</string>
+			<key>defaults</key>
+			<string>com.breitburg.Percept</string>
+			<key>key</key>
+			<string>baseURL</string>
+			<key>placeholder</key>
+			<string>https://api.openai.com/v1/</string>
+			<key>autoCapsType</key>
+			<integer>0</integer>
+			<key>autoCorrectionType</key>
+			<integer>1</integer>
+			<key>keyboardType</key>
+			<integer>3</integer>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSGroupCell</string>
+			<key>label</key>
+			<string>Model</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSEditTextCell</string>
+			<key>default</key>
+			<string>gpt-5.6-luna</string>
+			<key>defaults</key>
+			<string>com.breitburg.Percept</string>
+			<key>key</key>
+			<string>model</string>
+			<key>placeholder</key>
+			<string>gpt-5.6-luna</string>
+			<key>autoCapsType</key>
+			<integer>0</integer>
+			<key>autoCorrectionType</key>
+			<integer>1</integer>
 		</dict>
 		<dict>
 			<key>cell</key>
 			<string>PSGroupCell</string>
 			<key>footerText</key>
-			<string>Enable/disable the extension in AssistantExtensions settings.</string>
-		</dict>
-		<dict>
-			<key>cell</key>
-			<string>PSGroupCell</string>
-			<key>footerText</key>
-			<string>No respring is needed.</string>
-		</dict>
-		<dict>
-			<key>cell</key>
-			<string>PSGroupCell</string>
-			<key>footerText</key>
-			<string>By calvink19</string>
+			<string>Enable/disable the extension in AssistantExtensions settings. No respring is needed.</string>
 		</dict>
 	</array>
 	<key>title</key>
