@@ -3,7 +3,7 @@ Name: Percept
 Depends: mobilesubstrate, preferenceloader
 Conflicts: uk.calvink19.percept
 Replaces: uk.calvink19.percept
-Version: 2.4.0
+Version: 2.3.2
 Architecture: iphoneos-arm
 Description: Replaces Siri's answers with any OpenAI-compatible endpoint.
 Maintainer: breitburg

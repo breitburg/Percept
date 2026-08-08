@@ -1,15 +1,15 @@
 Package: com.breitburg.percept
-Version: 2.4.0
+Version: 2.3.2
 Architecture: iphoneos-arm
 Maintainer: breitburg
 Depends: mobilesubstrate, preferenceloader
 Conflicts: uk.calvink19.percept
 Replaces: uk.calvink19.percept
-Filename: ./debs/com.breitburg.percept_2.4.0_iphoneos-arm.deb
-Size: 23256
-MD5sum: 5e216a57827e5953419408097ada69b0
-SHA1: 33295fd700b7c46c703f554bec5f17ff0cf63417
-SHA256: 5d5e0a98c17c404ff56288e3616120434843017e8ae739bef0c3c96ec34caefd
+Filename: ./debs/com.breitburg.percept_2.3.2_iphoneos-arm.deb
+Size: 21278
+MD5sum: 350b4aa8d2aaf15f2a8ef39458f11795
+SHA1: fde859fd276803b21cdeaff07f9c18daeadb74fa
+SHA256: 81f1d3f8ba3de44acbd3a71c294359528cb3cbc561a50d1bbeaf763dfdb5db6e
 Section: Tweaks
 Description: Replaces Siri's answers with any OpenAI-compatible endpoint.
 Author: breitburg
