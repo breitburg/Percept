@@ -4,14 +4,13 @@
 @implementation XXXRootListController
 
 - (NSArray *)specifiers {
-	NSArray *specifiers = [super specifiers];
-
-	if (!specifiers) {
-		specifiers = [self loadSpecifiersFromPlistName:@"Root" target:self];
-		[self setSpecifiers:specifiers];
+	if (!_specifiers) {
+		// Retained explicitly: this bundle is built without ARC, and the returned array
+		// is autoreleased, so storing it unretained would leave the ivar dangling.
+		_specifiers = [[self loadSpecifiersFromPlistName:@"Root" target:self] retain];
 	}
 
-	return specifiers;
+	return _specifiers;
 }
 
 @end

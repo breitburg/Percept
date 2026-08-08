@@ -1,6 +1,6 @@
 #!/bin/bash
-# Builds both bundles against a legacy iOS SDK, assembles the .deb, and refreshes the
-# Cydia repo index under repo/. Needs no theos - just clang, ldid and dpkg.
+# Builds the tweak and preference bundle against a legacy iOS SDK, assembles the .deb, and
+# refreshes the Cydia repo index under repo/. Needs no theos - just clang, ldid and dpkg.
 #   SDK=/path/to/iPhoneOS9.3.sdk ./package.sh
 set -euo pipefail
 
@@ -19,14 +19,15 @@ command rm -rf build
 mkdir -p build
 
 # ld-classic is required: the modern linker cannot consume the SDK's TBD v1 stub libraries.
-compile_bundle() {
-    local output="$1" source="$2"; shift 2
+compile() {
+    local output="$1" source="$2" kind="$3"; shift 3
     for arch in armv7 arm64; do
         xcrun clang -arch "$arch" \
             -isysroot "$SDK" \
             -miphoneos-version-min="$MIN_IOS" \
-            -bundle -Os -Wall \
+            "$kind" -Os -Wall \
             -Wl,-ld_classic \
+            -Wno-objc-method-access \
             -F "$SDK/System/Library/PrivateFrameworks" \
             "$@" \
             "$source" -o "$output-$arch" 2>&1 \
@@ -39,27 +40,24 @@ compile_bundle() {
     ldid -S "$output"
 }
 
-# AICommands.mm is manually reference-counted and contains no C++, so build it as plain ObjC
-# to avoid pulling in a libc++ the legacy SDK stubs do not carry.
-compile_bundle build/Percept AICommands.mm \
-    -x objective-c -fobjc-exceptions \
+compile build/PerceptTweak.dylib tweak/PerceptTweak.m -dynamiclib \
+    -install_name /Library/MobileSubstrate/DynamicLibraries/PerceptTweak.dylib \
     -framework Foundation -framework UIKit -framework CFNetwork
 
 # Built without ARC on purpose: ARC below iOS 9 wants libarclite, which current Xcode no
-# longer ships. This controller performs no ownership operations, so MRC is equivalent.
-compile_bundle build/perceptprefs perceptprefs/XXXRootListController.m \
+# longer ships. Neither source performs ownership operations that ARC would change.
+compile build/perceptprefs perceptprefs/XXXRootListController.m -bundle \
     -framework UIKit -framework Foundation -framework Preferences
 
-EXTENSION="$STAGE/Library/AssistantExtensions/Percept.assistantExtension"
 PREFBUNDLE="$STAGE/Library/PreferenceBundles/perceptprefs.bundle"
-
-mkdir -p "$STAGE/DEBIAN" "$EXTENSION" "$PREFBUNDLE" "$STAGE/Library/PreferenceLoader/Preferences"
+mkdir -p "$STAGE/DEBIAN" "$PREFBUNDLE" \
+         "$STAGE/Library/MobileSubstrate/DynamicLibraries" \
+         "$STAGE/Library/PreferenceLoader/Preferences"
 
 cp control "$STAGE/DEBIAN/control"
 
-cp build/Percept "$EXTENSION/Percept"
-cp AIExtension-Info.plist "$EXTENSION/Info.plist"
-cp AIExtension-Info.plist "$EXTENSION/Percept-Info.plist"
+cp build/PerceptTweak.dylib "$STAGE/Library/MobileSubstrate/DynamicLibraries/"
+cp tweak/PerceptTweak.plist "$STAGE/Library/MobileSubstrate/DynamicLibraries/"
 
 cp build/perceptprefs "$PREFBUNDLE/perceptprefs"
 cp perceptprefs/Resources/Info.plist "$PREFBUNDLE/Info.plist"

@@ -32,7 +32,7 @@
 			<key>label</key>
 			<string>Base URL</string>
 			<key>footerText</key>
-			<string>Any OpenAI-compatible endpoint. Must end in a slash; chat/completions is appended to it.</string>
+			<string>Any OpenAI-compatible endpoint. chat/completions is appended to it.</string>
 		</dict>
 		<dict>
 			<key>cell</key>
@@ -77,8 +77,32 @@
 		<dict>
 			<key>cell</key>
 			<string>PSGroupCell</string>
+			<key>label</key>
+			<string>System Prompt</string>
 			<key>footerText</key>
-			<string>Enable/disable the extension in AssistantExtensions settings. No respring is needed.</string>
+			<string>Sent as the system message before each query. Leave empty to send none.</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSEditTextViewCell</string>
+			<key>default</key>
+			<string>You are Siri. Respond with 1-2 concise paragraphs.</string>
+			<key>defaults</key>
+			<string>com.breitburg.Percept</string>
+			<key>key</key>
+			<string>systemPrompt</string>
+			<key>height</key>
+			<integer>130</integer>
+			<key>autoCapsType</key>
+			<integer>0</integer>
+			<key>autoCorrectionType</key>
+			<integer>1</integer>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSGroupCell</string>
+			<key>footerText</key>
+			<string>Percept replaces Siri's own answers. A respring is required after installing.</string>
 		</dict>
 	</array>
 	<key>title</key>

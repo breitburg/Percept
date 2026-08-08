@@ -1,42 +1,62 @@
 # Percept
 
-AssistantExtensions plugin that routes Siri queries to an OpenAI-compatible chat API.
-
-Compatible with iOS 7.0+.
+Replaces Siri's answers with any OpenAI-compatible endpoint, on iOS 9.
 
 ## Install
 
 Add `https://breitburg.github.io/Percept/repo` as a repository in Cydia, then install
-**Percept**. It depends on [AssistantExtensions](https://k3a.me/) (`me.k3a.ae`),
-`preferenceloader` and `mobilesubstrate`.
+**Percept**. Respring afterwards. It needs `mobilesubstrate` and `preferenceloader` — and,
+unlike 1.x, **no longer depends on AssistantExtensions**.
 
 ## Settings
 
 Settings → Percept:
 
-| Field | Default | Notes |
-| --- | --- | --- |
-| API Key | *(empty)* | Sent as `Authorization: Bearer <key>` |
-| Base URL | `https://api.openai.com/v1/` | `chat/completions` is appended; a trailing slash is added if missing |
-| Model | `gpt-5.6-luna` | Any model the endpoint accepts |
+| Field | Default |
+| --- | --- |
+| API Key | *(empty)* — sent as `Authorization: Bearer <key>` |
+| Base URL | `https://api.openai.com/v1/` — `chat/completions` is appended |
+| Model | `gpt-5.6-luna` |
+| System Prompt | `You are Siri. Respond with 1-2 concise paragraphs.` — leave empty to send none |
 
-Any OpenAI-compatible endpoint works — point Base URL at a local or self-hosted gateway
-and set Model accordingly. Errors returned by the API are spoken back verbatim, so a
+Any OpenAI-compatible endpoint works. Errors from the API are spoken back verbatim, so a
 wrong key, URL or model name is diagnosable from the device.
 
-Enable the extension in AssistantExtensions settings. No respring is needed.
+## What it does, and does not, do
 
-## No proxy
+Apple still performs **speech recognition**. iOS 9 has no on-device recogniser — the
+transcript itself comes back from Apple's servers, so it cannot be avoided if voice input is
+wanted. **Your queries still reach Apple.** Only the *answer* is replaced. Percept is not a
+privacy tool.
 
-Earlier versions routed requests through a PHP proxy to work around TLS. That is not
-necessary. iOS 9 validates `api.openai.com` fine — its chain terminates at **GTS Root R4**,
-cross-signed by the 1998 **GlobalSign Root CA**, which is in the system trust store;
-`SecTrustEvaluate` returns `kSecTrustResultUnspecified` (success).
+## How it works
 
-The real failure was the API, not the certificate. `+[NSURLConnection sendSynchronousRequest:…]`
-has no delegate to answer the TLS server-trust challenge and so fails with `-1012`
-(`NSURLErrorUserCancelledAuthentication`). Using `NSURLSession` — whose default handling
-evaluates server trust properly — the same request succeeds against the API directly.
+A Substrate tweak in SpringBoard, hooking three points found by instrumenting the live
+frameworks:
+
+- **Transcript** — `-[AFConnection _tellSpeechDelegateSpeechRecognized:]` carries an
+  `SASSpeechRecognized`, whose `af_bestTextInterpretation` is the recognised text.
+- **Injection** — the reply is built as `SAUIAssistantUtteranceView` → `SAUIAddViews` →
+  `SARequestCompleted` and pushed through `-[AFUISiriSession performAceCommand:]`. TTS is
+  driven by `speakableText` (inherited from `SAAceView`), *not* `text`; setting only `text`
+  renders a silent bubble.
+- **Suppression** — Apple's own answer arrives at
+  `-[AFConnectionClientServiceDelegate requestDidReceiveCommand:reply:]` as an `SAUIAddViews`
+  and is dropped there.
+
+Three things that look reasonable but do not work:
+
+1. **Cancelling the request** after recognition. Apple's answer arrives in the same second
+   regardless — it is already committed server-side.
+2. **Emptying the command's `views`** instead of dropping it. These ace objects are
+   dictionary-backed, so mutating `views` does not affect rendering.
+3. **Dropping inbound `SAUIAddViews` by class.** Our own injected reply is echoed back
+   through the *same* inbound path, so this suppresses it too. The two are told apart by
+   matching the text just injected.
+
+`AssistantExtensions` (`me.k3a.ae`), which 1.x depended on, is dead on iOS 9: its dylib fails
+to load with `Symbol not found: _OBJC_CLASS_$_AFUISnippetController`, an iOS 5/6-era
+AssistantUI class absent from the shared cache. No extension of it can run.
 
 ## Building
 
@@ -47,8 +67,8 @@ Needs `clang` (Xcode), `ldid` and `dpkg`, plus a legacy iOS SDK such as
 SDK=/path/to/iPhoneOS9.3.sdk ./package.sh
 ```
 
-This compiles both bundles as fat armv7 + arm64, fake-signs them, builds the `.deb`
-into `build/`, and refreshes the repo index under `repo/`.
+Builds both binaries as fat armv7 + arm64, fake-signs them, produces the `.deb` in `build/`,
+and refreshes the repo index under `repo/`.
 
 Three stub libraries in the theos SDK need patching first, or the link fails:
 

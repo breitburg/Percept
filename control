@@ -1,11 +1,11 @@
 Package: com.breitburg.percept
 Name: Percept
-Depends: mobilesubstrate, me.k3a.ae, preferenceloader
+Depends: mobilesubstrate, preferenceloader
 Conflicts: uk.calvink19.percept
 Replaces: uk.calvink19.percept
-Version: 1.1.0
+Version: 2.0.0
 Architecture: iphoneos-arm
-Description: Makes Siri just a little bit smarter.
+Description: Replaces Siri's answers with any OpenAI-compatible endpoint.
 Maintainer: breitburg
 Author: breitburg
-Section: Addons (AssistantExtensions)
+Section: Tweaks
