@@ -224,11 +224,8 @@ static NSString *PerceptHTMLFromMarkdown(NSString *markdown) {
         [body appendString:@"</ul>"];
     }
 
-    // White text: the iOS 9 Siri sheet is a dark blur, and a UIWebView would otherwise
-    // default to black and render invisible.
-    return [NSString stringWithFormat:
-            @"<div style=\"font-family:-apple-system,Helvetica;font-size:15px;"
-            @"color:#fff;margin:0\">%@</div>", body];
+    // No styling: the Siri sheet supplies its own, so anything set here only fights it.
+    return body;
 }
 
 #pragma mark - Injection

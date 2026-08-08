@@ -33,6 +33,8 @@ cannot be known ahead of time; it is resolved at runtime from a list of candidat
 to `/var/tmp/percept.log`. If none binds, Percept falls back to a plain utterance rather than
 rendering nothing.
 
+The markup carries no styling of its own — the Siri sheet supplies that.
+
 Speech is unaffected either way: TTS is driven by `speakableText`, inherited from `SAAceView`
 by every view type, and is always set to the plain text.
 
